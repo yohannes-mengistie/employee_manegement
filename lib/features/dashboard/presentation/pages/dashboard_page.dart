@@ -1,9 +1,3 @@
-import 'package:employee_manegement/core/routes/app_routes.dart';
-import 'package:employee_manegement/core/theme/app_theme.dart';
-import 'package:employee_manegement/features/attendance/presentation/pages/attendance_page.dart';
-import 'package:employee_manegement/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:employee_manegement/features/payroll/presentation/pages/payroll_page.dart';
-import 'package:employee_manegement/features/profile/presentation/pages/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -22,7 +16,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   final List<Widget> _pages = [
     const DashboardHome(),
-    ProfilePage(employeeId: 1), 
+    const ProfilePage(),
     const PayrollPage(),
     const AttendancePage(),
   ];
@@ -78,7 +72,7 @@ class DashboardHome extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
+                  // Header with Theme Button
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -101,13 +95,35 @@ class DashboardHome extends StatelessWidget {
                           ),
                         ],
                       ),
-                      IconButton(
-                        onPressed: () {
-                          context.read<AuthBloc>().add(LogoutRequested());
-                          Navigator.pushReplacementNamed(
-                              context, AppRoutes.login);
-                        },
-                        icon: const Icon(Icons.logout),
+                      Row(
+                        children: [
+                          // Theme Button
+                          BlocBuilder<ThemeCubit, ThemeMode>(
+                            builder: (context, themeMode) {
+                              return IconButton(
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => const ThemeSelectorDialog(),
+                                  );
+                                },
+                                icon: Icon(
+                                  _getThemeIcon(themeMode),
+                                  color: AppTheme.primaryColor,
+                                ),
+                                tooltip: 'Change Theme',
+                              );
+                            },
+                          ),
+                          // Logout Button
+                          IconButton(
+                            onPressed: () {
+                              _showLogoutDialog(context);
+                            },
+                            icon: const Icon(Icons.logout),
+                            tooltip: 'Logout',
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -185,7 +201,7 @@ class DashboardHome extends StatelessWidget {
                           Icons.fingerprint,
                           AppTheme.primaryColor,
                           () {
-                            _navigateToAttendace(context);
+                            _navigateToAttendance(context);
                           },
                         ),
                         _buildActionCard(
@@ -208,11 +224,14 @@ class DashboardHome extends StatelessWidget {
                         ),
                         _buildActionCard(
                           context,
-                          'Update Profile',
-                          Icons.person_outline,
-                          AppTheme.secondaryColor,
+                          'Change Theme',
+                          Icons.palette,
+                          Colors.purple,
                           () {
-                            _navigateToProfile(context);
+                            showDialog(
+                              context: context,
+                              builder: (context) => const ThemeSelectorDialog(),
+                            );
                           },
                         ),
                       ],
@@ -226,6 +245,18 @@ class DashboardHome extends StatelessWidget {
         return const Center(child: CircularProgressIndicator());
       },
     );
+  }
+
+  IconData _getThemeIcon(ThemeMode themeMode) {
+    switch (themeMode) {
+      case ThemeMode.light:
+        return Icons.light_mode;
+      case ThemeMode.dark:
+        return Icons.dark_mode;
+      case ThemeMode.system:
+      default:
+        return Icons.settings_system_daydream;
+    }
   }
 
   Widget _buildStatCard(
@@ -313,42 +344,36 @@ class DashboardHome extends StatelessWidget {
       ),
     );
   }
-  //Navigation functions
 
-  void _navigateToAttendace(BuildContext context) {
+  // Navigation Functions
+  void _navigateToAttendance(BuildContext context) {
     final dashboardState = context.findAncestorStateOfType<_DashboardPageState>();
     if (dashboardState != null) {
       dashboardState.setState(() {
-        dashboardState._selectedIndex = 3; // Attendance index
-      });
-    }
-  }
- 
- void _navigateToPayroll(BuildContext context) {
-    final dashboardState = context.findAncestorStateOfType<_DashboardPageState>();
-    if (dashboardState != null) {
-      dashboardState.setState(() {
-        dashboardState._selectedIndex = 2; // Payroll index
-      });
-    }
-  }
-  void _navigateToProfile(BuildContext context) {
-    final dashboardState = context.findAncestorStateOfType<_DashboardPageState>();
-    if (dashboardState != null) {
-      dashboardState.setState(() {
-        dashboardState._selectedIndex = 1; // Profile index
+        dashboardState._selectedIndex = 3;
       });
     }
   }
 
-  void _showLeaveApplicationDialog(BuildContext context){
-    showDialog(context: context,
-     builder: (BuildContext context){
-      return const LeaveApplicationDialog();
-     },);
+  void _navigateToPayroll(BuildContext context) {
+    final dashboardState = context.findAncestorStateOfType<_DashboardPageState>();
+    if (dashboardState != null) {
+      dashboardState.setState(() {
+        dashboardState._selectedIndex = 2;
+      });
+    }
   }
 
-void _showLogoutDialog(BuildContext context) {
+  void _showLeaveApplicationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return const LeaveApplicationDialog();
+      },
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -379,7 +404,6 @@ void _showLogoutDialog(BuildContext context) {
     );
   }
 
-
   String _getGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) return 'Morning';
@@ -388,13 +412,12 @@ void _showLogoutDialog(BuildContext context) {
   }
 }
 
-//Leave Application Dialog Widget
-
-class LeaveApplicationDialog extends StatefulWidget{
+// Leave Application Dialog Widget (keeping the existing implementation)
+class LeaveApplicationDialog extends StatefulWidget {
   const LeaveApplicationDialog({super.key});
 
   @override
-  State<LeaveApplicationDialog> createState()=> _LeaveApplicationDialogState();
+  State<LeaveApplicationDialog> createState() => _LeaveApplicationDialogState();
 }
 
 class _LeaveApplicationDialogState extends State<LeaveApplicationDialog> {
@@ -403,6 +426,7 @@ class _LeaveApplicationDialogState extends State<LeaveApplicationDialog> {
   DateTime? _startDate;
   DateTime? _endDate;
   String _leaveType = 'Sick Leave';
+
   final List<String> _leaveTypes = [
     'Sick Leave',
     'Annual Leave',
@@ -513,9 +537,6 @@ class _LeaveApplicationDialogState extends State<LeaveApplicationDialog> {
               ),
               const SizedBox(height: 16),
 
-
-
-
               // Reason
               TextFormField(
                 controller: _reasonController,
@@ -593,7 +614,6 @@ class _LeaveApplicationDialogState extends State<LeaveApplicationDialog> {
   }
 
   void _submitLeaveApplication(BuildContext context) {
-    // Simulate leave application submission
     Navigator.of(context).pop();
     
     ScaffoldMessenger.of(context).showSnackBar(
@@ -614,101 +634,6 @@ class _LeaveApplicationDialogState extends State<LeaveApplicationDialog> {
         ),
         backgroundColor: AppTheme.successColor,
         duration: const Duration(seconds: 4),
-        action: SnackBarAction(
-          label: 'View',
-          textColor: Colors.white,
-          onPressed: () {
-            _showLeaveStatusDialog(context);
-          },
-        ),
-      ),
-    );
-  }
-
-
-  void _showLeaveStatusDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Leave Application Status'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildStatusItem('Application ID', 'LA-2024-001'),
-              _buildStatusItem('Type', _leaveType),
-              _buildStatusItem(
-                'Duration',
-                '${DateFormat('MMM dd').format(_startDate!)} - ${DateFormat('MMM dd, yyyy').format(_endDate!)}',
-              ),
-              _buildStatusItem('Status', 'Pending Approval'),
-              _buildStatusItem('Submitted', DateFormat('MMM dd, yyyy HH:mm').format(DateTime.now())),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.warningColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: AppTheme.warningColor,
-                      size: 20,
-                    ),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Your manager will review this application within 2 business days.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.warningColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildStatusItem(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              '$label:',
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-                color: Colors.grey,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
       ),
     );
   }
