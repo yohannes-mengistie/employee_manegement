@@ -1,3 +1,4 @@
+import 'package:employee_manegement/core/models/employee.dart';
 import 'package:equatable/equatable.dart';
 
 

@@ -1,6 +1,6 @@
 class ApiConfig {
   // Replace with your actual backend URL
-  static const String baseUrl = 'https://your-backend-api.com/api';
+  static const String baseUrl = 'https://backend-r944.onrender.com/';
   
   // Auth Endpoints
   static const String registerEndpoint = '/auth/register';

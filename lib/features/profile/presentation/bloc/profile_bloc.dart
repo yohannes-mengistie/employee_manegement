@@ -1,3 +1,6 @@
+import 'package:employee_manegement/core/exceptions/api_exceptions.dart';
+import 'package:employee_manegement/core/models/employee.dart';
+import 'package:employee_manegement/core/repositories/employee_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 
@@ -97,6 +100,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     
     try {
       final employee = await _employeeRepository.getCurrentEmployeeProfile();
+      print('///////////////////////////////////Loaded employee profile: ${employee.toJson()}');
       emit(ProfileLoaded(employee: employee));
     } on ApiException catch (e) {
       emit(ProfileError(message: e.message));
@@ -113,6 +117,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     
     try {
       final employee = await _employeeRepository.getEmployeeById(event.employeeId);
+      print('///////////////////////////////////Loaded employee profile: ${employee.toJson()}');
       emit(ProfileLoaded(employee: employee));
     } on ApiException catch (e) {
       emit(ProfileError(message: e.message));

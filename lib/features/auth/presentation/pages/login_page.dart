@@ -1,6 +1,9 @@
+import 'package:employee_manegement/core/models/employee.dart';
+import 'package:employee_manegement/core/routes/app_routes.dart';
+import 'package:employee_manegement/core/theme/app_theme.dart';
+import 'package:employee_manegement/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -20,6 +23,14 @@ class _LoginPageState extends State<LoginPage> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-fill demo credentials for testing
+    _emailController.text = 'employee@company.com';
+    _passwordController.text = 'password123';
   }
 
   @override
@@ -79,6 +90,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 48),
 
+
                   // Email Field
                   TextFormField(
                     controller: _emailController,
@@ -132,21 +144,27 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 24),
 
-                  // Login Button
+                  // Login Button - BYPASS VERSION FOR TESTING
                   BlocBuilder<AuthBloc, AuthState>(
                     builder: (context, state) {
                       return ElevatedButton(
                         onPressed: state is AuthLoading
                             ? null
                             : () {
-                                if (_formKey.currentState!.validate()) {
-                                  context.read<AuthBloc>().add(
-                                        LoginRequested(
-                                          email: _emailController.text.trim(),
-                                          password: _passwordController.text,
-                                        ),
-                                      );
-                                }
+                                // BYPASS LOGIN - Remove this in production
+                                _bypassLogin(context);
+
+                                // Original login logic (commented out for testing)
+                                /*
+              if (_formKey.currentState!.validate()) {
+                context.read<AuthBloc>().add(
+                      LoginRequested(
+                        email: _emailController.text.trim(),
+                        password: _passwordController.text,
+                      ),
+                    );
+              }
+              */
                               },
                         child: state is AuthLoading
                             ? const SizedBox(
@@ -158,11 +176,12 @@ class _LoginPageState extends State<LoginPage> {
                                       Colors.white),
                                 ),
                               )
-                            : const Text('Sign In'),
+                            : const Text('Sign In (Bypass)'),
                       );
                     },
                   ),
                   const SizedBox(height: 16),
+
 
                   // Forgot Password Link
                   TextButton(
@@ -274,6 +293,7 @@ class _LoginPageState extends State<LoginPage> {
                                 ForgotPasswordRequested(
                                   email: emailController.text.trim(),
                                 ),
+
                               );
                             }
                           },
@@ -294,6 +314,34 @@ class _LoginPageState extends State<LoginPage> {
           ),
         );
       },
+    );
+  }
+
+  // BYPASS LOGIN METHOD - FOR TESTING ONLY
+  void _bypassLogin(BuildContext context) {
+    // Create a mock employee for testing
+    final mockEmployee = Employee(
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john@company.com',
+      phone: '+1234567890',
+      department: 'Engineering',
+      position: 'Software Engineer',
+      profileImage: 'https://via.placeholder.com/150',
+      joinDate: DateTime(2023, 1, 15),
+      salary: 75000.0,
+      employeeId: 1,
+      tenantId: 1,
+      address: '123 Main Street, City, State',
+      dateOfBirth: DateTime(1990, 5, 15),
+      departmentId: 1,
+      gender: Gender.male,
+    );
+
+    // Simulate successful authentication
+    context.read<AuthBloc>().add(
+      // We'll create a bypass event
+      BypassLogin(employee: mockEmployee),
     );
   }
 }

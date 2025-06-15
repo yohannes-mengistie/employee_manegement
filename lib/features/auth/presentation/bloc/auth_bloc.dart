@@ -1,3 +1,9 @@
+import 'package:employee_manegement/core/exceptions/api_exceptions.dart';
+import 'package:employee_manegement/core/models/auth_dto.dart';
+import 'package:employee_manegement/core/models/auth_response.dart';
+import 'package:employee_manegement/core/models/employee.dart';
+import 'package:employee_manegement/core/repositories/auth_repository.dart';
+import 'package:employee_manegement/core/services/token_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 
@@ -48,7 +54,7 @@ class RegisterRequested extends AuthEvent {
   });
 
   @override
-  List<Object?> get props => [email, password, firstName, lastName, phone, department, position];
+  List<Object> get props => [email, password, firstName, lastName, phone ?? '', department ?? '', position ?? ''];
 }
 
 class ForgotPasswordRequested extends AuthEvent {
@@ -77,6 +83,16 @@ class VerifyEmailRequested extends AuthEvent {
 
   @override
   List<Object> get props => [token];
+}
+
+// Add this event for bypass login (for testing purpose)
+class BypassLogin extends AuthEvent {
+  final Employee employee;
+
+  const BypassLogin({required this.employee});
+
+  @override
+  List<Object> get props => [employee];
 }
 
 // States
@@ -155,6 +171,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<ForgotPasswordRequested>(_onForgotPasswordRequested);
     on<ResetPasswordRequested>(_onResetPasswordRequested);
     on<VerifyEmailRequested>(_onVerifyEmailRequested);
+    on<BypassLogin>(_onBypassLogin);
   }
 
   Future<void> _onLoginRequested(
@@ -333,3 +350,28 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 }
+
+// for testing purpose
+
+Future<void> _onBypassLogin(
+  BypassLogin event,
+  Emitter<AuthState> emit,
+) async {
+  emit(AuthLoading());
+  //await Future.delayed(Duration(seconds: 500)); 
+  try {
+    final mockAuthResponde = AuthResponse(
+      token:'mock_jwt_token_for_testing',
+      refreshToken:'mock_refresh_token_for_testing',
+      employee:event.employee,
+      expiresAt: DateTime.now().add(const Duration(hours:24)),
+    );
+    final tokenService = TokenService();
+    await tokenService.saveAuthResponse(mockAuthResponde);
+    emit(AuthAuthenticated(
+      employee: event.employee,
+      token: mockAuthResponde.token,
+    ));
+  } catch (e) {
+    emit(AuthError(message: 'Bypass login failed: ${e.toString()}'));
+  }}

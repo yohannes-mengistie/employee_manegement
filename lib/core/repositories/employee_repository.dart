@@ -1,5 +1,11 @@
 
 
+import 'package:employee_manegement/core/config/api_config.dart';
+import 'package:employee_manegement/core/models/employee.dart';
+import 'package:employee_manegement/core/models/employee_dto.dart';
+import 'package:employee_manegement/core/services/api_service.dart';
+import 'package:employee_manegement/core/services/token_service.dart';
+
 class EmployeeRepository {
   final ApiService _apiService = ApiService();
   final TokenService _tokenService = TokenService();
@@ -55,6 +61,7 @@ class EmployeeRepository {
   // Get current employee profile (using /user/me endpoint)
   Future<Employee> getCurrentEmployeeProfile() async {
     final response = await _apiService.get(ApiConfig.userMeEndpoint);
+    print("//////////////////////////////////////${response.data}");
     return Employee.fromJson(response.data);
   }
 
