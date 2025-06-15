@@ -1,7 +1,6 @@
-import 'package:employee_manegement/core/models/attendance.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-
+import 'package:intl/intl.dart';
 
 // Events
 abstract class AttendanceEvent extends Equatable {
@@ -11,13 +10,48 @@ abstract class AttendanceEvent extends Equatable {
   List<Object> get props => [];
 }
 
-class LoadAttendanceHistory extends AttendanceEvent {}
+class LoadAttendanceHistory extends AttendanceEvent {
+  final String? monthYear;
+
+  const LoadAttendanceHistory({this.monthYear});
+
+  @override
+  List<Object> get props => [monthYear ?? ''];
+}
+
+class LoadTodayAttendance extends AttendanceEvent {}
+
+class LoadAttendanceStats extends AttendanceEvent {
+  final String? startDate;
+  final String? endDate;
+
+  const LoadAttendanceStats({this.startDate, this.endDate});
+
+  @override
+  List<Object> get props => [startDate ?? '', endDate ?? ''];
+}
 
 class CheckIn extends AttendanceEvent {}
 
-class CheckOut extends AttendanceEvent {}
+class CheckOut extends AttendanceEvent {
+  final int attendanceId;
 
-class LoadTodayAttendance extends AttendanceEvent {}
+  const CheckOut({required this.attendanceId});
+
+  @override
+  List<Object> get props => [attendanceId];
+}
+
+class SearchAttendance extends AttendanceEvent {
+  final String? startDate;
+  final String? endDate;
+  final AttendanceStatus? status;
+
+  const SearchAttendance({this.startDate, this.endDate, this.status});
+
+  @override
+  List<Object> get props => [startDate ?? '', endDate ?? '', status ?? ''];
+}
 
 // States
 abstract class AttendanceState extends Equatable {
@@ -31,35 +65,19 @@ class AttendanceInitial extends AttendanceState {}
 
 class AttendanceLoading extends AttendanceState {}
 
-class AttendanceHistoryLoaded extends AttendanceState {
-  final List<Attendance> attendances;
-
-  const AttendanceHistoryLoaded({required this.attendances});
-
-  @override
-  List<Object> get props => [attendances];
-}
-
-class TodayAttendanceLoaded extends AttendanceState {
-  final Attendance? todayAttendance;
-
-  const TodayAttendanceLoaded({this.todayAttendance});
-
-  @override
-  List<Object?> get props => [todayAttendance];
-}
-
 class AttendanceDataLoaded extends AttendanceState {
   final List<Attendance> attendances;
   final Attendance? todayAttendance;
+  final AttendanceStats? stats;
 
   const AttendanceDataLoaded({
     required this.attendances,
     this.todayAttendance,
+    this.stats,
   });
 
   @override
-  List<Object?> get props => [attendances, todayAttendance];
+  List<Object?> get props => [attendances, todayAttendance, stats];
 }
 
 class AttendanceUpdated extends AttendanceState {
@@ -86,14 +104,19 @@ class AttendanceError extends AttendanceState {
 
 // BLoC
 class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
-  Attendance? _todayAttendance;
+  final AttendanceRepository _attendanceRepository = AttendanceRepository();
+  
   List<Attendance> _attendanceHistory = [];
+  Attendance? _todayAttendance;
+  AttendanceStats? _stats;
 
   AttendanceBloc() : super(AttendanceInitial()) {
     on<LoadAttendanceHistory>(_onLoadAttendanceHistory);
     on<LoadTodayAttendance>(_onLoadTodayAttendance);
+    on<LoadAttendanceStats>(_onLoadAttendanceStats);
     on<CheckIn>(_onCheckIn);
     on<CheckOut>(_onCheckOut);
+    on<SearchAttendance>(_onSearchAttendance);
   }
 
   Future<void> _onLoadAttendanceHistory(
@@ -103,59 +126,21 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
     emit(AttendanceLoading());
     
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
+      _attendanceHistory = await _attendanceRepository.getCurrentEmployeeAttendance(
+        monthYear: event.monthYear,
+      );
       
-      // Generate dummy attendance data for the last 30 days
-      final attendances = <Attendance>[];
-      final now = DateTime.now();
-      
-      for (int i = 1; i <= 30; i++) {
-        final date = now.subtract(Duration(days: i));
-        
-        // Skip weekends
-        if (date.weekday == DateTime.saturday || date.weekday == DateTime.sunday) {
-          continue;
-        }
-        
-        final checkInTime = DateTime(
-          date.year,
-          date.month,
-          date.day,
-          8 + (i % 3), // Vary check-in time between 8-10 AM
-          (i * 15) % 60,
-        );
-        
-        final checkOutTime = DateTime(
-          date.year,
-          date.month,
-          date.day,
-          17 + (i % 2), // Vary check-out time between 17-18 PM
-          (i * 20) % 60,
-        );
-        
-        attendances.add(
-          Attendance(
-            id: 'attendance_$i',
-            employeeId: 'EMP001',
-            date: date,
-            checkInTime: checkInTime,
-            checkOutTime: checkOutTime,
-            status: _getAttendanceStatus(checkInTime, checkOutTime),
-          ),
-        );
-      }
-      
-      _attendanceHistory = attendances;
       emit(AttendanceDataLoaded(
         attendances: _attendanceHistory,
         todayAttendance: _todayAttendance,
+        stats: _stats,
       ));
+    } on ApiException catch (e) {
+      emit(AttendanceError(message: e.message));
     } catch (e) {
       emit(AttendanceError(message: 'Failed to load attendance history: ${e.toString()}'));
     }
   }
-
 
   Future<void> _onLoadTodayAttendance(
     LoadTodayAttendance event,
@@ -164,19 +149,39 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
     emit(AttendanceLoading());
     
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(milliseconds: 500));
-      
-      // For demo purposes, we'll start with no attendance for today
-      // In a real app, this would check the backend for existing attendance
-      _todayAttendance = null;
+      _todayAttendance = await _attendanceRepository.getTodayAttendance();
       
       emit(AttendanceDataLoaded(
         attendances: _attendanceHistory,
         todayAttendance: _todayAttendance,
+        stats: _stats,
       ));
+    } on ApiException catch (e) {
+      emit(AttendanceError(message: e.message));
     } catch (e) {
       emit(AttendanceError(message: 'Failed to load today\'s attendance: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onLoadAttendanceStats(
+    LoadAttendanceStats event,
+    Emitter<AttendanceState> emit,
+  ) async {
+    try {
+      _stats = await _attendanceRepository.getCurrentEmployeeAttendanceStats(
+        startDate: event.startDate,
+        endDate: event.endDate,
+      );
+      
+      emit(AttendanceDataLoaded(
+        attendances: _attendanceHistory,
+        todayAttendance: _todayAttendance,
+        stats: _stats,
+      ));
+    } on ApiException catch (e) {
+      emit(AttendanceError(message: e.message));
+    } catch (e) {
+      emit(AttendanceError(message: 'Failed to load attendance stats: ${e.toString()}'));
     }
   }
 
@@ -184,39 +189,30 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
     CheckIn event,
     Emitter<AttendanceState> emit,
   ) async {
-    // Store current state
     final currentState = state;
     emit(AttendanceLoading());
     
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
-      
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      
-      _todayAttendance = Attendance(
-        id: 'attendance_today',
-        employeeId: 'EMP001',
-        date: today,
-        checkInTime: now,
-        checkOutTime: null,
-        status: _getAttendanceStatus(now, null),
-      );
+      final attendance = await _attendanceRepository.checkIn();
+      _todayAttendance = attendance;
       
       emit(AttendanceUpdated(
-        attendance: _todayAttendance!,
-        message: 'Checked in successfully at ${_formatTime(now)}',
+        attendance: attendance,
+        message: 'Checked in successfully at ${_formatTime(attendance.checkInTime!)}',
       ));
       
-      // Return to data loaded state
       emit(AttendanceDataLoaded(
         attendances: _attendanceHistory,
         todayAttendance: _todayAttendance,
+        stats: _stats,
       ));
+    } on ApiException catch (e) {
+      emit(AttendanceError(message: e.message));
+      if (currentState is AttendanceDataLoaded) {
+        emit(currentState);
+      }
     } catch (e) {
       emit(AttendanceError(message: 'Failed to check in: ${e.toString()}'));
-      // Restore previous state on error
       if (currentState is AttendanceDataLoaded) {
         emit(currentState);
       }
@@ -227,65 +223,62 @@ class AttendanceBloc extends Bloc<AttendanceEvent, AttendanceState> {
     CheckOut event,
     Emitter<AttendanceState> emit,
   ) async {
-    if (_todayAttendance == null || _todayAttendance!.checkInTime == null) {
-      emit(const AttendanceError(message: 'Please check in first'));
-      return;
-    }
-
-    // Store current state
     final currentState = state;
     emit(AttendanceLoading());
     
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
-      
-      final now = DateTime.now();
-      
-      _todayAttendance = _todayAttendance!.copyWith(
-        checkOutTime: now,
-        status: _getAttendanceStatus(_todayAttendance!.checkInTime!, now),
-      );
+      final attendance = await _attendanceRepository.checkOut(event.attendanceId);
+      _todayAttendance = attendance;
       
       emit(AttendanceUpdated(
-        attendance: _todayAttendance!,
-        message: 'Checked out successfully at ${_formatTime(now)}',
+        attendance: attendance,
+        message: 'Checked out successfully at ${_formatTime(attendance.checkOutTime!)}',
       ));
       
-      // Return to data loaded state
       emit(AttendanceDataLoaded(
         attendances: _attendanceHistory,
         todayAttendance: _todayAttendance,
+        stats: _stats,
       ));
+    } on ApiException catch (e) {
+      emit(AttendanceError(message: e.message));
+      if (currentState is AttendanceDataLoaded) {
+        emit(currentState);
+      }
     } catch (e) {
       emit(AttendanceError(message: 'Failed to check out: ${e.toString()}'));
-      // Restore previous state on error
       if (currentState is AttendanceDataLoaded) {
         emit(currentState);
       }
     }
   }
 
-  AttendanceStatus _getAttendanceStatus(DateTime? checkIn, DateTime? checkOut) {
-    if (checkIn == null) return AttendanceStatus.absent;
+  Future<void> _onSearchAttendance(
+    SearchAttendance event,
+    Emitter<AttendanceState> emit,
+  ) async {
+    emit(AttendanceLoading());
     
-    // Consider late if check-in is after 9:30 AM
-    final lateThreshold = DateTime(
-      checkIn.year,
-      checkIn.month,
-      checkIn.day,
-      9,
-      30,
-    );
-    
-    if (checkIn.isAfter(lateThreshold)) {
-      return AttendanceStatus.late;
+    try {
+      _attendanceHistory = await _attendanceRepository.searchAttendance(
+        startDate: event.startDate,
+        endDate: event.endDate,
+        status: event.status,
+      );
+      
+      emit(AttendanceDataLoaded(
+        attendances: _attendanceHistory,
+        todayAttendance: _todayAttendance,
+        stats: _stats,
+      ));
+    } on ApiException catch (e) {
+      emit(AttendanceError(message: e.message));
+    } catch (e) {
+      emit(AttendanceError(message: 'Failed to search attendance: ${e.toString()}'));
     }
-    
-    return AttendanceStatus.present;
   }
 
   String _formatTime(DateTime time) {
-    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    return DateFormat('HH:mm').format(time);
   }
 }

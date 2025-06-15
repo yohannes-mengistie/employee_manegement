@@ -1,9 +1,5 @@
-import 'package:employee_manegement/core/models/attendance.dart';
-import 'package:employee_manegement/core/theme/app_theme.dart';
-import 'package:employee_manegement/features/attendance/presentation/bloc/attendance_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'package:intl/intl.dart';
 
 class AttendancePage extends StatefulWidget {
@@ -21,9 +17,15 @@ class _AttendancePageState extends State<AttendancePage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    // Load both today's attendance and history
-    context.read<AttendanceBloc>().add(LoadTodayAttendance());
-    context.read<AttendanceBloc>().add(LoadAttendanceHistory());
+    // Load data when page initializes
+    _loadInitialData();
+  }
+
+  void _loadInitialData() {
+    final bloc = context.read<AttendanceBloc>();
+    bloc.add(LoadTodayAttendance());
+    bloc.add(LoadAttendanceHistory());
+    bloc.add(LoadAttendanceStats());
   }
 
   @override
@@ -46,10 +48,7 @@ class _AttendancePageState extends State<AttendancePage>
         ),
         actions: [
           IconButton(
-            onPressed: () {
-              context.read<AttendanceBloc>().add(LoadTodayAttendance());
-              context.read<AttendanceBloc>().add(LoadAttendanceHistory());
-            },
+            onPressed: _loadInitialData,
             icon: const Icon(Icons.refresh),
           ),
         ],
@@ -87,12 +86,10 @@ class _AttendancePageState extends State<AttendancePage>
 class TodayAttendanceTab extends StatelessWidget {
   const TodayAttendanceTab({super.key});
 
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AttendanceBloc, AttendanceState>(
       builder: (context, state) {
-        // Handle loading state
         if (state is AttendanceLoading) {
           return const Center(
             child: Column(
@@ -106,7 +103,6 @@ class TodayAttendanceTab extends StatelessWidget {
           );
         }
         
-        // Handle error state
         if (state is AttendanceError) {
           return Center(
             child: Column(
@@ -142,12 +138,10 @@ class TodayAttendanceTab extends StatelessWidget {
           );
         }
         
-        // Handle data loaded state
         if (state is AttendanceDataLoaded) {
-          return _buildTodayContent(context, state.todayAttendance);
+          return _buildTodayContent(context, state.todayAttendance, state.stats);
         }
         
-        // Handle initial state - show loading
         return const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -162,7 +156,11 @@ class TodayAttendanceTab extends StatelessWidget {
     );
   }
 
-  Widget _buildTodayContent(BuildContext context, Attendance? todayAttendance) {
+  Widget _buildTodayContent(
+    BuildContext context, 
+    Attendance? todayAttendance, 
+    AttendanceStats? stats,
+  ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -207,7 +205,6 @@ class TodayAttendanceTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-
 
           // Attendance Status
           if (todayAttendance != null) ...[
@@ -291,7 +288,6 @@ class TodayAttendanceTab extends StatelessWidget {
             ),
             const SizedBox(height: 20),
           ] else ...[
-            // Show welcome message when no attendance data yet
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -305,7 +301,6 @@ class TodayAttendanceTab extends StatelessWidget {
                     const SizedBox(height: 12),
                     Text(
                       'Ready to start your day?',
-
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -347,9 +342,12 @@ class TodayAttendanceTab extends StatelessWidget {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: todayAttendance?.checkInTime != null &&
-                          todayAttendance?.checkOutTime == null
+                          todayAttendance?.checkOutTime == null &&
+                          todayAttendance?.id != null
                       ? () {
-                          context.read<AttendanceBloc>().add(CheckOut());
+                          context.read<AttendanceBloc>().add(
+                            CheckOut(attendanceId: todayAttendance!.id!),
+                          );
                         }
                       : null,
                   icon: const Icon(Icons.logout),
@@ -364,74 +362,75 @@ class TodayAttendanceTab extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-
           // Quick Stats
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'This Month Summary',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+          if (stats != null) ...[
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'This Month Summary',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 16),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildSummaryItem(
+                            context,
+                            'Present Days',
+                            '${stats.presentDays}',
+                            Icons.check_circle,
+                            AppTheme.successColor,
+                          ),
                         ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildSummaryItem(
-                          context,
-                          'Present Days',
-                          '22',
-                          Icons.check_circle,
-                          AppTheme.successColor,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildSummaryItem(
+                            context,
+                            'Late Days',
+                            '${stats.lateDays}',
+                            Icons.schedule,
+                            AppTheme.warningColor,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildSummaryItem(
-                          context,
-                          'Late Days',
-                          '3',
-                          Icons.schedule,
-                          AppTheme.warningColor,
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildSummaryItem(
+                            context,
+                            'Absent Days',
+                            '${stats.absentDays}',
+                            Icons.cancel,
+                            AppTheme.errorColor,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildSummaryItem(
-                          context,
-                          'Absent Days',
-                          '1',
-                          Icons.cancel,
-                          AppTheme.errorColor,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildSummaryItem(
+                            context,
+                            'Attendance %',
+                            '${stats.attendancePercentage.toStringAsFixed(1)}%',
+                            Icons.trending_up,
+                            AppTheme.primaryColor,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildSummaryItem(
-                          context,
-                          'Avg Hours',
-                          '8.2',
-                          Icons.trending_up,
-                          AppTheme.primaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -472,7 +471,6 @@ class TodayAttendanceTab extends StatelessWidget {
       ),
     );
   }
-
 
   Widget _buildSummaryItem(
     BuildContext context,
@@ -531,7 +529,6 @@ class AttendanceHistoryTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<AttendanceBloc, AttendanceState>(
       builder: (context, state) {
-        // Handle loading state
         if (state is AttendanceLoading) {
           return const Center(
             child: Column(
@@ -545,7 +542,6 @@ class AttendanceHistoryTab extends StatelessWidget {
           );
         }
         
-        // Handle error state
         if (state is AttendanceError) {
           return Center(
             child: Column(
@@ -581,7 +577,6 @@ class AttendanceHistoryTab extends StatelessWidget {
           );
         }
         
-        // Handle data loaded state
         if (state is AttendanceDataLoaded) {
           if (state.attendances.isEmpty) {
             return Center(
@@ -602,7 +597,6 @@ class AttendanceHistoryTab extends StatelessWidget {
                   Text(
                     'Your attendance records will appear here',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-
                           color: Colors.grey[600],
                         ),
                   ),
@@ -694,7 +688,6 @@ class AttendanceHistoryTab extends StatelessWidget {
           );
         }
         
-        // Handle initial state
         return const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -705,7 +698,6 @@ class AttendanceHistoryTab extends StatelessWidget {
             ],
           ),
         );
-
       },
     );
   }

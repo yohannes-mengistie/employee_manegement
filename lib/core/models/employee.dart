@@ -75,6 +75,61 @@ class Employee extends Equatable {
     );
   }
 
+  // JSON serialization - Updated to match your backend
+  factory Employee.fromJson(Map<String, dynamic> json) {
+    return Employee(
+      firstName: json['firstName'] ?? '',
+      lastName: json['lastName'] ?? '',
+      email: json['email'] ?? '',
+      phone: json['phone'] ?? '',
+      department: json['department']?['name'] ?? json['department'] ?? '',
+      position: json['position'] ?? '',
+      profileImage: json['profileImage'] ?? 'https://via.placeholder.com/150',
+      joinDate: DateTime.parse(json['joinDate'] ?? DateTime.now().toIso8601String()),
+      salary: (json['salary'] ?? 0).toDouble(),
+      employeeId: json['id'] ?? json['employeeId'] ?? 0,
+      tenantId: json['tenantId'] ?? json['companyId'] ?? 0,
+      address: json['address'] ?? '',
+      dateOfBirth: DateTime.parse(json['dateOfBirth'] ?? DateTime.now().toIso8601String()),
+      departmentId: json['departmentId'] ?? 0,
+      gender: _parseGender(json['gender']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'firstName': firstName,
+      'lastName': lastName,
+      'email': email,
+      'phone': phone,
+      'department': department,
+      'position': position,
+      'profileImage': profileImage,
+      'joinDate': joinDate.toIso8601String(),
+      'salary': salary,
+      'id': employeeId,
+      'employeeId': employeeId,
+      'tenantId': tenantId,
+      'address': address,
+      'dateOfBirth': dateOfBirth.toIso8601String(),
+      'departmentId': departmentId,
+      'gender': gender.name,
+    };
+  }
+
+  static Gender _parseGender(String? genderString) {
+    switch (genderString?.toLowerCase()) {
+      case 'male':
+        return Gender.male;
+      case 'female':
+        return Gender.female;
+      case 'other':
+        return Gender.other;
+      default:
+        return Gender.other;
+    }
+  }
+
   @override
   List<Object?> get props => [
         firstName,

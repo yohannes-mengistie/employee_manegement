@@ -1,6 +1,3 @@
-import 'package:employee_manegement/core/routes/app_routes.dart';
-import 'package:employee_manegement/core/theme/app_theme.dart';
-import 'package:employee_manegement/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -166,12 +163,137 @@ class _LoginPageState extends State<LoginPage> {
                     },
                   ),
                   const SizedBox(height: 16),
+
+                  // Forgot Password Link
+                  TextButton(
+                    onPressed: () {
+                      _showForgotPasswordDialog(context);
+                    },
+                    child: const Text('Forgot Password?'),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Demo Credentials
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue[200]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Demo Credentials:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue[800],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Email: employee@company.com',
+                          style: TextStyle(color: Colors.blue[700]),
+                        ),
+                        Text(
+                          'Password: password123',
+                          style: TextStyle(color: Colors.blue[700]),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  void _showForgotPasswordDialog(BuildContext context) {
+    final emailController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) {
+            if (state is AuthPasswordResetSent) {
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: AppTheme.successColor,
+                ),
+              );
+            } else if (state is AuthError) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: AppTheme.errorColor,
+                ),
+              );
+            }
+          },
+          child: AlertDialog(
+            title: const Text('Forgot Password'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Enter your email address and we\'ll send you a link to reset your password.',
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email Address',
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: const Text('Cancel'),
+              ),
+              BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, state) {
+                  return ElevatedButton(
+                    onPressed: state is AuthLoading
+                        ? null
+                        : () {
+                            if (emailController.text.trim().isNotEmpty) {
+                              context.read<AuthBloc>().add(
+                                ForgotPasswordRequested(
+                                  email: emailController.text.trim(),
+                                ),
+                              );
+                            }
+                          },
+                    child: state is AuthLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text('Send Reset Link'),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

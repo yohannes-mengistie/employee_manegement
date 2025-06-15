@@ -1,6 +1,5 @@
-import 'package:employee_manegement/core/routes/app_routes.dart';
-import 'package:employee_manegement/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});

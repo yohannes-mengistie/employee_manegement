@@ -1,15 +1,10 @@
-import 'package:employee_manegement/core/models/employee.dart';
-import 'package:employee_manegement/core/theme/app_theme.dart';
-import 'package:employee_manegement/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 class ProfilePage extends StatefulWidget {
-  final int employeeId; 
-
-  const ProfilePage({super.key, required this.employeeId});
+  const ProfilePage({super.key});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -27,7 +22,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    context.read<ProfileBloc>().add(LoadProfile(id: widget.employeeId)); 
+    context.read<ProfileBloc>().add(LoadProfile());
   }
 
   @override
@@ -177,7 +172,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 Expanded(
                                   child: _buildInfoItem(
                                     'Employee ID',
-                                    state.employee.employeeId.toString(),
+                                    state.employee.employeeId,
                                     Icons.badge,
                                   ),
                                 ),
