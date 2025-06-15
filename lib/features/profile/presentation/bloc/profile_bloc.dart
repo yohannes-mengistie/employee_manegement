@@ -1,7 +1,8 @@
+import 'dart:convert';
 import 'package:employee_manegement/core/models/employee.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-
+import 'package:http/http.dart' as http;
 
 // Events
 abstract class ProfileEvent extends Equatable {
@@ -11,7 +12,14 @@ abstract class ProfileEvent extends Equatable {
   List<Object> get props => [];
 }
 
-class LoadProfile extends ProfileEvent {}
+class LoadProfile extends ProfileEvent {
+  final int id; 
+
+  const LoadProfile({required this.id});
+
+  @override
+  List<Object> get props => [id];
+}
 
 class UpdateProfile extends ProfileEvent {
   final Employee employee;
@@ -83,29 +91,50 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     Emitter<ProfileState> emit,
   ) async {
     emit(ProfileLoading());
-    
+
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 1));
-      
-      // Dummy employee data
-      final employee = Employee(
-        id: '1',
-        firstName: 'John',
-        lastName: 'Habtamu',
-        email: 'john.doe@company.com',
-        phone: '+1234567890',
-        department: 'Engineering',
-        position: 'Senior Developer',
-        profileImage: 'https://via.placeholder.com/150',
-        joinDate: DateTime(2022, 1, 15),
-        salary: 75000.0,
-        employeeId: 'EMP001',
+      final response = await http.get(
+        Uri.parse('https://backend-r944.onrender.com/employee/${event.id}'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
       );
-      
-      emit(ProfileLoaded(employee: employee));
+      print("////////////////////////////////////Response status: ${response.statusCode}");
+      print("////////////////////////////////////Response body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        // Validate required fields
+        if (data is! Map<String, dynamic>) {
+          throw Exception('Invalid response format');
+        }
+
+        final employee = Employee(
+          firstName: data['firstName'] ?? '',
+          lastName: data['lastName'] ?? '',
+          email: data['email'] ?? '',
+          phone: data['phone'] ?? '',
+          department: data['department'] ?? '',
+          position: data['position'] ?? '',
+          profileImage: data['profileImage'] ?? '',
+          joinDate: DateTime.parse(data['joinDate'] ?? DateTime.now().toIso8601String()),
+          salary: (data['salary'] ?? 0).toDouble(),
+          employeeId: data['employeeId'] ?? 0,
+          tenantId: data['tenantId'] ?? 0,
+          address: data['address'] ?? '',
+          dateOfBirth: DateTime.parse(data['dateOfBirth'] ?? DateTime.now().toIso8601String()),
+          departmentId: data['departmentId'] ?? 0,
+          gender: Gender.values.firstWhere(
+            (g) => g.name == data['gender'],
+          ),
+        );
+        emit(ProfileLoaded(employee: employee));
+      } else {
+        emit(ProfileError(message: 'Failed to load profile: ${response.statusCode}'));
+      }
     } catch (e) {
-      emit(ProfileError(message: e.toString()));
+      emit(ProfileError(message: 'Error loading profile: $e'));
     }
   }
 
@@ -114,15 +143,43 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     Emitter<ProfileState> emit,
   ) async {
     emit(ProfileLoading());
-    
+
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(seconds: 2));
+      final response = await http.put(
+        Uri.parse('https://backend-r944.onrender.com/employee/${event.employee.employeeId}'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'employeeId': event.employee.employeeId,
+          'firstName': event.employee.firstName,
+          'lastName': event.employee.lastName,
+          'email': event.employee.email,
+          'phone': event.employee.phone,
+          'department': event.employee.department,
+          'position': event.employee.position,
+          'profileImage': event.employee.profileImage,
+          'joinDate': event.employee.joinDate.toIso8601String(),
+          'salary': event.employee.salary,
+          'employeeId': event.employee.employeeId,
+          'tenantId': event.employee.tenantId,
+          'address': event.employee.address,
+          'dateOfBirth': event.employee.dateOfBirth.toIso8601String(),
+          'departmentId': event.employee.departmentId,
+          'gender': event.employee.gender.toString().split('.').last,
+        }),
+      );
+
       
-      emit(ProfileUpdated(employee: event.employee));
-      emit(ProfileLoaded(employee: event.employee));
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        emit(ProfileUpdated(employee: event.employee));
+        emit(ProfileLoaded(employee: event.employee));
+      } else {
+        emit(ProfileError(message: 'Failed to update profile: ${response.statusCode}'));
+      }
     } catch (e) {
-      emit(ProfileError(message: e.toString()));
+      emit(ProfileError(message: 'Error updating profile: $e'));
     }
   }
 
@@ -135,17 +192,30 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       final updatedEmployee = currentEmployee.copyWith(
         profileImage: event.imagePath,
       );
-      
+
       emit(ProfileLoading());
-      
+
       try {
-        // Simulate API call
-        await Future.delayed(const Duration(seconds: 1));
-        
-        emit(ProfileLoaded(employee: updatedEmployee));
+        final response = await http.patch(
+          Uri.parse('https://backend-r944.onrender.com/employee/${updatedEmployee.employeeId}'),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'profileImage': event.imagePath,
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          emit(ProfileLoaded(employee: updatedEmployee));
+        } else {
+          emit(ProfileError(message: 'Failed to update profile image: ${response.statusCode}'));
+        }
       } catch (e) {
-        emit(ProfileError(message: e.toString()));
+        emit(ProfileError(message: 'Error updating profile image: $e'));
       }
+    } else {
+      emit(ProfileError(message: 'No profile loaded to update image'));
     }
   }
 }

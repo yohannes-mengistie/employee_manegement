@@ -6,9 +6,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
-
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final int employeeId; 
+
+  const ProfilePage({super.key, required this.employeeId});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -26,7 +27,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    context.read<ProfileBloc>().add(LoadProfile());
+    context.read<ProfileBloc>().add(LoadProfile(id: widget.employeeId)); 
   }
 
   @override
@@ -176,7 +177,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 Expanded(
                                   child: _buildInfoItem(
                                     'Employee ID',
-                                    state.employee.employeeId,
+                                    state.employee.employeeId.toString(),
                                     Icons.badge,
                                   ),
                                 ),

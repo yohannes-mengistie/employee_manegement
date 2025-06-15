@@ -23,7 +23,11 @@ class AppRoutes {
       case dashboard:
         return MaterialPageRoute(builder: (_) => const DashboardPage());
       case profile:
-        return MaterialPageRoute(builder: (_) => const ProfilePage());
+        final args = settings.arguments as Map<String, dynamic>?;
+        final employeeId = args?['employeeId'];
+        return MaterialPageRoute(
+          builder: (_) => ProfilePage(employeeId: employeeId),
+        );
       case payroll:
         return MaterialPageRoute(builder: (_) => const PayrollPage());
       case attendance:

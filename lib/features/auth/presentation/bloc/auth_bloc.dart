@@ -79,7 +79,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // Dummy authentication - in real app, validate with backend
       if (event.email == 'employee@company.com' && event.password == 'password123') {
         final employee = Employee(
-          id: '1',
+          employeeId: 1,
           firstName: 'John',
           lastName: 'Habtamu',
           email: event.email,
@@ -89,7 +89,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           profileImage: 'https://via.placeholder.com/150',
           joinDate: DateTime(2022, 1, 15),
           salary: 75000.0,
-          employeeId: 'EMP001',
+          tenantId: 2,
+          address: '123 Main St, City, Country',
+          dateOfBirth: DateTime(1990, 1, 1),
+          departmentId: 3,
+          gender: Gender.male
         );
         
         emit(AuthAuthenticated(employee: employee));

@@ -1,7 +1,8 @@
 import 'package:equatable/equatable.dart';
 
+enum Gender { male, female, other }
+
 class Employee extends Equatable {
-  final String id;
   final String firstName;
   final String lastName;
   final String email;
@@ -11,10 +12,14 @@ class Employee extends Equatable {
   final String profileImage;
   final DateTime joinDate;
   final double salary;
-  final String employeeId;
+  final int employeeId;
+  final int tenantId; 
+  final String address; 
+  final DateTime dateOfBirth; 
+  final int departmentId; 
+  final Gender gender; 
 
   const Employee({
-    required this.id,
     required this.firstName,
     required this.lastName,
     required this.email,
@@ -25,12 +30,16 @@ class Employee extends Equatable {
     required this.joinDate,
     required this.salary,
     required this.employeeId,
+    required this.tenantId,
+    required this.address,
+    required this.dateOfBirth,
+    required this.departmentId,
+    required this.gender,
   });
 
   String get fullName => '$firstName $lastName';
 
   Employee copyWith({
-    String? id,
     String? firstName,
     String? lastName,
     String? email,
@@ -40,10 +49,14 @@ class Employee extends Equatable {
     String? profileImage,
     DateTime? joinDate,
     double? salary,
-    String? employeeId,
+    int? employeeId,
+    int? tenantId,
+    String? address,
+    DateTime? dateOfBirth,
+    int? departmentId,
+    Gender? gender,
   }) {
     return Employee(
-      id: id ?? this.id,
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,
       email: email ?? this.email,
@@ -54,12 +67,16 @@ class Employee extends Equatable {
       joinDate: joinDate ?? this.joinDate,
       salary: salary ?? this.salary,
       employeeId: employeeId ?? this.employeeId,
+      tenantId: tenantId ?? this.tenantId,
+      address: address ?? this.address,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      departmentId: departmentId ?? this.departmentId,
+      gender: gender ?? this.gender,
     );
   }
 
   @override
   List<Object?> get props => [
-        id,
         firstName,
         lastName,
         email,
@@ -70,5 +87,10 @@ class Employee extends Equatable {
         joinDate,
         salary,
         employeeId,
+        tenantId,
+        address,
+        dateOfBirth,
+        departmentId,
+        gender,
       ];
 }

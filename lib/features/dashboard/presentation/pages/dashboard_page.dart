@@ -22,7 +22,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   final List<Widget> _pages = [
     const DashboardHome(),
-    const ProfilePage(),
+    ProfilePage(employeeId: 1), 
     const PayrollPage(),
     const AttendancePage(),
   ];
