@@ -1,7 +1,9 @@
 import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:employee_manegement/core/config/api_config.dart';
 import 'package:employee_manegement/core/models/auth_response.dart';
+import 'package:employee_manegement/core/services/jwt_service.dart';
 import 'package:employee_manegement/core/services/storage_service.dart';
 
 
@@ -17,18 +19,21 @@ class TokenService {
     await StorageService.setString(_authResponseKey, jsonEncode(authResponse.toJson()));
   }
 
-  // Get current token
+  // Get current token (access_token) with JWT validation
   Future<String?> getToken() async {
-    final authResponse = await getAuthResponse();
-    if (authResponse != null && !authResponse.isExpired) {
-      return authResponse.token;
-    }
-    
-    // Token expired, try to refresh
-    final refreshed = await refreshToken();
-    if (refreshed) {
-      final newAuthResponse = await getAuthResponse();
-      return newAuthResponse?.token;
+    final token = StorageService.getString(_tokenKey);
+    if (token != null) {
+      // Check if token is expired using JWT
+      if (!JwtService.isTokenExpired(token)) {
+        return token;
+      } else {
+        print('🔄 Token expired, attempting refresh...');
+        // Token expired, try to refresh
+        final refreshed = await refreshToken();
+        if (refreshed) {
+          return StorageService.getString(_tokenKey);
+        }
+      }
     }
     
     return null;
@@ -54,10 +59,13 @@ class TokenService {
     return null;
   }
 
-  // Check if user is authenticated
+  // Check if user is authenticated using JWT validation
   Future<bool> isAuthenticated() async {
-    final authResponse = await getAuthResponse();
-    return authResponse != null && !authResponse.isExpired;
+    final token = StorageService.getString(_tokenKey);
+    if (token != null) {
+      return !JwtService.isTokenExpired(token);
+    }
+    return false;
   }
 
   // Refresh token
@@ -67,16 +75,45 @@ class TokenService {
       if (refreshToken == null) return false;
 
       final dio = Dio();
+      
       final response = await dio.post(
         '${ApiConfig.baseUrl}${ApiConfig.refreshTokenEndpoint}',
-        data: {'refreshToken': refreshToken},
-        options: Options(headers: ApiConfig.defaultHeaders),
+        data: {'access_token': refreshToken},
+        options: Options(
+          headers: {
+            ...ApiConfig.defaultHeaders,
+            'Authorization': 'Bearer $refreshToken',
+          },
+        ),
       );
 
-      if (response.statusCode == 200) {
-        final authResponse = AuthResponse.fromJson(response.data);
-        await saveAuthResponse(authResponse);
-        return true;
+      if (response.statusCode == 200 && response.data != null) {
+        final responseData = response.data as Map<String, dynamic>;
+        
+        if (responseData.containsKey('access_token')) {
+          final newToken = responseData['access_token'] as String;
+          
+          // Update stored token
+          await StorageService.setString(_tokenKey, newToken);
+          await StorageService.setString(_refreshTokenKey, newToken);
+          
+          // Update auth response with new token
+          final currentAuthResponse = await getAuthResponse();
+          if (currentAuthResponse != null) {
+            final newExpirationDate = JwtService.getExpirationDate(newToken) ?? 
+                                     DateTime.now().add(const Duration(hours: 24));
+            
+            final updatedAuthResponse = AuthResponse(
+              token: newToken,
+              refreshToken: newToken,
+              employee: currentAuthResponse.employee,
+              expiresAt: newExpirationDate,
+            );
+            
+            await saveAuthResponse(updatedAuthResponse);
+            return true;
+          }
+        }
       }
     } catch (e) {
       print('Error refreshing token: $e');
@@ -85,6 +122,7 @@ class TokenService {
     return false;
   }
 
+
   // Clear all tokens
   Future<void> clearTokens() async {
     await StorageService.remove(_tokenKey);
@@ -92,15 +130,21 @@ class TokenService {
     await StorageService.remove(_authResponseKey);
   }
 
-  // Get employee ID from token
+  // Get employee ID from JWT token
   Future<int?> getEmployeeId() async {
-    final authResponse = await getAuthResponse();
-    return authResponse?.employee.employeeId;
+    final token = StorageService.getString(_tokenKey);
+    if (token != null) {
+      return JwtService.getUserId(token);
+    }
+    return null;
   }
 
-  // Get tenant ID from token
+  // Get tenant ID from JWT token
   Future<int?> getTenantId() async {
-    final authResponse = await getAuthResponse();
-    return authResponse?.employee.tenantId;
+    final token = StorageService.getString(_tokenKey);
+    if (token != null) {
+      return JwtService.getTenantId(token);
+    }
+    return null;
   }
 }

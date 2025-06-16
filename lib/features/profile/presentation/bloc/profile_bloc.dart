@@ -100,7 +100,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     
     try {
       final employee = await _employeeRepository.getCurrentEmployeeProfile();
-      print('///////////////////////////////////Loaded employee profile: ${employee.toJson()}');
       emit(ProfileLoaded(employee: employee));
     } on ApiException catch (e) {
       emit(ProfileError(message: e.message));
@@ -117,7 +116,6 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     
     try {
       final employee = await _employeeRepository.getEmployeeById(event.employeeId);
-      print('///////////////////////////////////Loaded employee profile: ${employee.toJson()}');
       emit(ProfileLoaded(employee: employee));
     } on ApiException catch (e) {
       emit(ProfileError(message: e.message));

@@ -36,12 +36,14 @@ class ApiService {
     Options? options,
   }) async {
     try {
+      print('🌐 Making GET request to: ${ApiConfig.baseUrl}$endpoint');
       return await _dio.get(
         endpoint,
         queryParameters: queryParameters,
         options: options,
       );
     } catch (e) {
+      print('❌ GET request failed: $e');
       throw _handleError(e);
     }
   }
@@ -54,6 +56,7 @@ class ApiService {
     Options? options,
   }) async {
     try {
+      print('🌐 Making POST request to: ${ApiConfig.baseUrl}$endpoint');
       return await _dio.post(
         endpoint,
         data: data,
@@ -61,6 +64,7 @@ class ApiService {
         options: options,
       );
     } catch (e) {
+      print('❌ POST request failed: $e');
       throw _handleError(e);
     }
   }
@@ -122,44 +126,63 @@ class ApiService {
     }
   }
 
+
   ApiException _handleError(dynamic error) {
     if (error is DioException) {
+      print('🔍 DioException details:');
+      print('  Type: ${error.type}');
+      print('  Message: ${error.message}');
+      print('  Response: ${error.response?.data}');
+      print('  Status Code: ${error.response?.statusCode}');
+      
       switch (error.type) {
         case DioExceptionType.connectionTimeout:
         case DioExceptionType.sendTimeout:
         case DioExceptionType.receiveTimeout:
-          return ApiException('Connection timeout. Please try again.');
+          return const ApiException('Connection timeout. Please check your internet connection.');
         
         case DioExceptionType.badResponse:
           final statusCode = error.response?.statusCode;
-          final message = error.response?.data?['message'] ?? 'Unknown error occurred';
+          final responseData = error.response?.data;
+          String message = 'Unknown error occurred';
+          
+          if (responseData is Map<String, dynamic>) {
+            message = responseData['message'] ?? 
+                     responseData['error'] ?? 
+                     responseData['detail'] ?? 
+                     'Server error occurred';
+          } else if (responseData is String) {
+            message = responseData;
+          }
           
           switch (statusCode) {
             case 400:
               return ApiException('Bad request: $message');
             case 401:
-              return ApiException('Unauthorized access. Please login again.');
+              return const ApiException('Unauthorized access. Please login again.');
             case 403:
-              return ApiException('Access forbidden.');
+              return const ApiException('Access forbidden.');
             case 404:
-              return ApiException('Resource not found.');
+              return const ApiException('Resource not found.');
+            case 422:
+              return ApiException('Validation failed: $message');
             case 500:
-              return ApiException('Server error. Please try again later.');
+              return const ApiException('Server error. Please try again later.');
             default:
               return ApiException('Error $statusCode: $message');
           }
         
         case DioExceptionType.cancel:
-          return ApiException('Request was cancelled');
+          return const ApiException('Request was cancelled');
         
         case DioExceptionType.unknown:
           if (error.error is SocketException) {
-            return ApiException('No internet connection');
+            return const ApiException('No internet connection');
           }
-          return ApiException('Network error occurred');
+          return const ApiException('Network error occurred');
         
         default:
-          return ApiException('Unknown error occurred');
+          return const ApiException('Unknown error occurred');
       }
     }
     
@@ -185,6 +208,9 @@ class _AuthInterceptor extends Interceptor {
     final token = await _tokenService.getToken();
     if (token != null) {
       options.headers['Authorization'] = 'Bearer $token';
+      print('🔑 Added auth token to request');
+    } else {
+      print('⚠️ No auth token available');
     }
 
     handler.next(options);
@@ -193,6 +219,7 @@ class _AuthInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) async {
     if (err.response?.statusCode == 401) {
+      print('🔄 Token expired, attempting refresh...');
       // Token expired, try to refresh
       final refreshed = await _tokenService.refreshToken();
       if (refreshed) {
@@ -219,18 +246,21 @@ class _AuthInterceptor extends Interceptor {
   }
 }
 
+
 // Logging Interceptor
 class _LoggingInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     print('🚀 REQUEST: ${options.method} ${options.path}');
     print('📝 Data: ${options.data}');
+    print('🔗 Headers: ${options.headers}');
     handler.next(options);
   }
 
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     print('✅ RESPONSE: ${response.statusCode} ${response.requestOptions.path}');
+    print('📦 Response Data: ${response.data}');
     handler.next(response);
   }
 
@@ -238,6 +268,7 @@ class _LoggingInterceptor extends Interceptor {
   void onError(DioException err, ErrorInterceptorHandler handler) {
     print('❌ ERROR: ${err.response?.statusCode} ${err.requestOptions.path}');
     print('📝 Error: ${err.message}');
+    print('📦 Error Response: ${err.response?.data}');
     handler.next(err);
   }
 }
@@ -247,11 +278,12 @@ class _ErrorInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     // Log error details for debugging
-    print('API Error: ${err.message}');
-    if (err.response != null) {
-      print('Status Code: ${err.response!.statusCode}');
-      print('Response Data: ${err.response!.data}');
-    }
+    print('API Error Details:');
+    print('  URL: ${err.requestOptions.uri}');
+    print('  Method: ${err.requestOptions.method}');
+    print('  Status Code: ${err.response?.statusCode}');
+    print('  Response Data: ${err.response?.data}');
+    print('  Error Message: ${err.message}');
     handler.next(err);
   }
 }

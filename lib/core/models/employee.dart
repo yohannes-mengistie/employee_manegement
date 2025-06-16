@@ -75,25 +75,118 @@ class Employee extends Equatable {
     );
   }
 
-  // JSON serialization - Updated to match your backend
+  // JSON serialization - Updated with better null handling and type safety
   factory Employee.fromJson(Map<String, dynamic> json) {
-    return Employee(
-      firstName: json['firstName'] ?? '',
-      lastName: json['lastName'] ?? '',
-      email: json['email'] ?? '',
-      phone: json['phone'] ?? '',
-      department: json['department']?['name'] ?? json['department'] ?? '',
-      position: json['position'] ?? '',
-      profileImage: json['profileImage'] ?? 'https://via.placeholder.com/150',
-      joinDate: DateTime.parse(json['joinDate'] ?? DateTime.now().toIso8601String()),
-      salary: (json['salary'] ?? 0).toDouble(),
-      employeeId: json['id'] ?? json['employeeId'] ?? 0,
-      tenantId: json['tenantId'] ?? json['companyId'] ?? 0,
-      address: json['address'] ?? '',
-      dateOfBirth: DateTime.parse(json['dateOfBirth'] ?? DateTime.now().toIso8601String()),
-      departmentId: json['departmentId'] ?? 0,
-      gender: _parseGender(json['gender']),
-    );
+    try {
+      print('🔧 Parsing Employee from JSON: $json');
+      
+      return Employee(
+        firstName: _parseString(json['firstName'] ?? json['first_name'], 'Employee'),
+        lastName: _parseString(json['lastName'] ?? json['last_name'], 'User'),
+        email: _parseString(json['email'], 'user@company.com'),
+        phone: _parseString(json['phone'], '+1234567890'),
+        department: _extractDepartment(json),
+        position: _parseString(json['position'] ?? json['job_title'], 'Employee'),
+        profileImage: _parseString(
+          json['profileImage'] ?? json['profile_image'] ?? json['avatar'], 
+          'https://via.placeholder.com/150'
+        ),
+        joinDate: _parseDate(json['joinDate'] ?? json['join_date'] ?? json['created_at']),
+        salary: _parseDouble(json['salary']),
+        employeeId: _parseInt(json['id'] ?? json['employeeId'] ?? json['employee_id']),
+        tenantId: _parseInt(json['tenantId'] ?? json['companyId'] ?? json['company_id']),
+        address: _parseString(json['address'], '123 Main Street, City, State'),
+        dateOfBirth: _parseDate(json['dateOfBirth'] ?? json['date_of_birth']),
+        departmentId: _parseInt(json['departmentId'] ?? json['department_id']),
+        gender: _parseGender(json['gender']),
+      );
+    } catch (e) {
+      print('❌ Error parsing Employee from JSON: $e');
+      print('📦 Raw JSON: $json');
+      rethrow;
+    }
+  }
+
+  // Helper methods for parsing with better type safety
+  static String _parseString(dynamic value, String defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is String) return value;
+    return value.toString();
+  }
+
+
+  static String _extractDepartment(Map<String, dynamic> json) {
+    if (json['department'] != null) {
+      if (json['department'] is String) {
+        return json['department'];
+      } else if (json['department'] is Map) {
+        return json['department']['name'] ?? 'General';
+      }
+    }
+    return json['dept'] ?? 'General';
+  }
+
+  static DateTime _parseDate(dynamic dateValue) {
+    if (dateValue == null) return DateTime.now();
+    if (dateValue is String) {
+      try {
+        return DateTime.parse(dateValue);
+      } catch (e) {
+        print('Error parsing date: $dateValue, using current date');
+        return DateTime.now();
+      }
+    }
+    if (dateValue is DateTime) return dateValue;
+    return DateTime.now();
+  }
+
+  static double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      try {
+        return double.parse(value);
+      } catch (e) {
+        print('Error parsing double: $value, using 0.0');
+        return 0.0;
+      }
+    }
+    return 0.0;
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) {
+      try {
+        return int.parse(value);
+      } catch (e) {
+        print('Error parsing int: $value, using 0');
+        return 0;
+      }
+    }
+    return 0;
+  }
+
+  static Gender _parseGender(dynamic genderValue) {
+    if (genderValue == null) return Gender.other;
+    
+    String genderString = genderValue.toString().toLowerCase();
+    switch (genderString) {
+      case 'male':
+      case 'm':
+        return Gender.male;
+      case 'female':
+      case 'f':
+        return Gender.female;
+      case 'other':
+      case 'o':
+        return Gender.other;
+      default:
+        return Gender.other;
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -115,19 +208,6 @@ class Employee extends Equatable {
       'departmentId': departmentId,
       'gender': gender.name,
     };
-  }
-
-  static Gender _parseGender(String? genderString) {
-    switch (genderString?.toLowerCase()) {
-      case 'male':
-        return Gender.male;
-      case 'female':
-        return Gender.female;
-      case 'other':
-        return Gender.other;
-      default:
-        return Gender.other;
-    }
   }
 
   @override
