@@ -4,7 +4,6 @@ import 'package:employee_manegement/core/theme/app_theme.dart';
 import 'package:employee_manegement/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -61,12 +60,23 @@ class _ProfilePageState extends State<ProfilePage> {
     _positionController.text = user.position;
   }
 
-  Future<void> _pickImage() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      context.read<ProfileBloc>().add(UpdateProfileImage(imagePath: image.path));
-    }
+  // Helper method to build an avatar with initials
+  Widget _buildInitialsAvatar(String fullName) {
+    final initials = fullName.isNotEmpty
+        ? fullName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase()
+        : 'JD'; // Default initials if name is empty
+    return CircleAvatar(
+      radius: 60,
+      backgroundColor: AppTheme.primaryColor,
+      child: Text(
+        initials,
+        style: const TextStyle(
+          fontSize: 36,
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
   }
 
   @override
@@ -140,64 +150,46 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   children: [
                     Center(
-                      child: Stack(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppTheme.primaryColor,
-                                width: 3.0,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  spreadRadius: 2,
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: CircleAvatar(
-                              radius: 60,
-                              backgroundImage: state.user.profileImage.isNotEmpty
-                                  ? NetworkImage(state.user.profileImage)
-                                  : const AssetImage('assets/images/profile.avif') as ImageProvider,
-                              backgroundColor: Colors.grey[300],
-                            ),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.primary,
+                            width: 3.0,
                           ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: GestureDetector(
-                              onTap: _pickImage,
-                              child: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primaryColor,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 2.0,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.1),
+                              spreadRadius: 2,
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 60,
+                          backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+                          child: state.user.profileImage.isNotEmpty
+                              ? ClipOval(
+                                  child: Image.network(
+                                    state.user.profileImage,
+                                    width: 120,
+                                    height: 120,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return _buildInitialsAvatar(state.user.fullName);
+                                    },
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return const CircularProgressIndicator();
+                                    },
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.2),
-                                      spreadRadius: 1,
-                                      blurRadius: 4,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                                )
+                              : _buildInitialsAvatar(state.user.fullName),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),
-
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -208,6 +200,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               'Employee Information',
                               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                   ),
                             ),
                             const SizedBox(height: 16),
@@ -221,7 +214,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -232,10 +224,10 @@ class _ProfilePageState extends State<ProfilePage> {
                               'Personal Information',
                               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                     fontWeight: FontWeight.bold,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                   ),
                             ),
                             const SizedBox(height: 16),
-
                             Row(
                               children: [
                                 Expanded(
@@ -272,7 +264,6 @@ class _ProfilePageState extends State<ProfilePage> {
                               ],
                             ),
                             const SizedBox(height: 16),
-
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
@@ -292,7 +283,6 @@ class _ProfilePageState extends State<ProfilePage> {
                               },
                             ),
                             const SizedBox(height: 16),
-
                             TextFormField(
                               controller: _phoneController,
                               keyboardType: TextInputType.phone,
@@ -308,7 +298,6 @@ class _ProfilePageState extends State<ProfilePage> {
                               },
                             ),
                             const SizedBox(height: 16),
-
                             TextFormField(
                               controller: _departmentController,
                               decoration: const InputDecoration(
@@ -323,7 +312,6 @@ class _ProfilePageState extends State<ProfilePage> {
                               },
                             ),
                             const SizedBox(height: 16),
-
                             TextFormField(
                               controller: _positionController,
                               decoration: const InputDecoration(
@@ -359,13 +347,13 @@ class _ProfilePageState extends State<ProfilePage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: Theme.of(context).colorScheme.surfaceContainer),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: AppTheme.primaryColor),
+          Icon(icon, size: 20, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
@@ -374,7 +362,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 Text(
                   label,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
                 const SizedBox(height: 2),
@@ -382,6 +370,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   value,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                 ),
               ],

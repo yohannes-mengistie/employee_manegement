@@ -150,7 +150,7 @@ class DashboardHome extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'About Digit Tech Solutions',
+                            'About ACM Tech Company',
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.bold,
                                   color: Colors.purple,
@@ -160,7 +160,7 @@ class DashboardHome extends StatelessWidget {
                           AnimatedTextKit(
                             animatedTexts: [
                               TypewriterAnimatedText(
-                                'Digit Tech Solutions is a leading innovator in technology, empowering businesses with cutting-edge solutions in Addis Ababa and beyond.',
+                                'ACM is a leading innovator in technology, empowering businesses with cutting-edge solutions in Addis Ababa and beyond.',
                                 textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
                                       color: AppTheme.accentColor,
                                       height: 1.5,
