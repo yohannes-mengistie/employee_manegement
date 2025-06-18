@@ -18,6 +18,15 @@ class AppTheme {
     primarySwatch: Colors.blue,
     primaryColor: primaryColor,
     scaffoldBackgroundColor: lightBackground,
+    colorScheme: ColorScheme.light(
+      primary: primaryColor,
+      secondary: secondaryColor,
+      surface: Colors.grey[50]!, // Background for form fields
+      onSurface: Colors.black87, // Text/icon color on surface
+      surfaceContainer: Colors.grey[300]!, // Border color
+      onSurfaceVariant: Colors.grey[600]!, // Secondary text/icon color
+      error: errorColor,
+    ),
     textTheme: GoogleFonts.interTextTheme(),
     appBarTheme: AppBarTheme(
       backgroundColor: Colors.white,
@@ -50,7 +59,8 @@ class AppTheme {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.grey[50],
+      fillColor: Colors.grey[50], // Matches colorScheme.surface
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
         borderSide: BorderSide(color: Colors.grey[300]!),
@@ -61,8 +71,21 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: primaryColor),
+        borderSide: const BorderSide(color: primaryColor, width: 2),
       ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: errorColor),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: errorColor, width: 2),
+      ),
+      labelStyle: TextStyle(color: Colors.black87),
+      hintStyle: TextStyle(color: Colors.grey[500]),
+      prefixIconColor: Colors.black87,
+      suffixIconColor: Colors.black87,
+      errorStyle: const TextStyle(color: errorColor),
     ),
   );
 
@@ -72,6 +95,15 @@ class AppTheme {
     primarySwatch: Colors.blue,
     primaryColor: primaryColor,
     scaffoldBackgroundColor: darkBackground,
+    colorScheme: ColorScheme.dark(
+      primary: primaryColor,
+      secondary: secondaryColor,
+      surface: const Color(0xFF1E293B), // Background for form fields
+      onSurface: Colors.white, // Text/icon color on surface
+      surfaceContainer: const Color(0xFF334155), // Border color
+      onSurfaceVariant: Colors.grey[400]!, // Secondary text/icon color
+      error: errorColor,
+    ),
     textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
     appBarTheme: AppBarTheme(
       backgroundColor: const Color(0xFF1E293B),
@@ -90,6 +122,47 @@ class AppTheme {
         borderRadius: BorderRadius.circular(12),
       ),
       color: const Color(0xFF1E293B),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: primaryColor,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: const Color(0xFF1E293B), // Matches colorScheme.surface
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFF334155)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: Color(0xFF334155)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: primaryColor, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: errorColor),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(color: errorColor, width: 2),
+      ),
+      labelStyle: const TextStyle(color: Color(0xFFE5E7EB)),
+      hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
+      prefixIconColor: const Color(0xFFE5E7EB),
+      suffixIconColor: const Color(0xFFE5E7EB),
+      errorStyle: const TextStyle(color: errorColor),
     ),
   );
 }

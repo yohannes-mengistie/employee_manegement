@@ -28,7 +28,6 @@ class _LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
-    // Auto-fill demo credentials for testing
     _emailController.text = '';
     _passwordController.text = '';
   }
@@ -151,10 +150,6 @@ class _LoginPageState extends State<LoginPage> {
                         onPressed: state is AuthLoading
                             ? null
                             : () {
-                                // BYPASS LOGIN - Remove this in production
-                                //_bypassLogin(context);
-
-                                // Original login logic (commented out for testing)
                                 
               if (_formKey.currentState!.validate()) {
                 context.read<AuthBloc>().add(
@@ -176,7 +171,7 @@ class _LoginPageState extends State<LoginPage> {
                                       Colors.white),
                                 ),
                               )
-                            : const Text('Sign In (Bypass)'),
+                            : const Text('Sign In '),
                       );
                     },
                   ),
@@ -191,37 +186,6 @@ class _LoginPageState extends State<LoginPage> {
                     child: const Text('Forgot Password?'),
                   ),
                   const SizedBox(height: 16),
-
-                  // Demo Credentials
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue[200]!),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Demo Credentials:',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue[800],
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Email: employee@company.com',
-                          style: TextStyle(color: Colors.blue[700]),
-                        ),
-                        Text(
-                          'Password: password123',
-                          style: TextStyle(color: Colors.blue[700]),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -317,32 +281,3 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 }
-
-//   // BYPASS LOGIN METHOD - FOR TESTING ONLY
-//   void _bypassLogin(BuildContext context) {
-//     // Create a mock employee for testing
-//     final mockEmployee = Employee(
-//       firstName: 'John',
-//       lastName: 'Doe',
-//       email: 'john@company.com',
-//       phone: '+1234567890',
-//       department: 'Engineering',
-//       position: 'Software Engineer',
-//       profileImage: 'https://via.placeholder.com/150',
-//       joinDate: DateTime(2023, 1, 15),
-//       salary: 75000.0,
-//       employeeId: 1,
-//       tenantId: 1,
-//       address: '123 Main Street, City, State',
-//       dateOfBirth: DateTime(1990, 5, 15),
-//       departmentId: 1,
-//       gender: Gender.male,
-//     );
-
-//     // Simulate successful authentication
-//     context.read<AuthBloc>().add(
-//       // We'll create a bypass event
-//       BypassLogin(employee: mockEmployee),
-//     );
-//   }
-// }

@@ -1,4 +1,5 @@
 import 'package:employee_manegement/core/models/employee.dart';
+import 'package:employee_manegement/core/models/user.dart';
 import 'package:employee_manegement/core/theme/app_theme.dart';
 import 'package:employee_manegement/features/profile/presentation/bloc/profile_bloc.dart';
 import 'package:flutter/material.dart';
@@ -39,19 +40,30 @@ class _ProfilePageState extends State<ProfilePage> {
     super.dispose();
   }
 
-  void _populateFields(Employee employee) {
-    _firstNameController.text = employee.firstName;
-    _lastNameController.text = employee.lastName;
-    _emailController.text = employee.email;
-    _phoneController.text = employee.phone;
-    _departmentController.text = employee.department;
-    _positionController.text = employee.position;
+  String _getFirstName(String fullName) {
+    if (fullName.isEmpty) return '';
+    List<String> nameParts = fullName.split(' ');
+    return nameParts.isNotEmpty ? nameParts[0] : '';
+  }
+
+  String _getLastName(String fullName) {
+    if (fullName.isEmpty) return '';
+    List<String> nameParts = fullName.split(' ');
+    return nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+  }
+
+  void _populateFields(User user) {
+    _firstNameController.text = _getFirstName(user.fullName);
+    _lastNameController.text = _getLastName(user.fullName);
+    _emailController.text = user.email;
+    _phoneController.text = user.phone;
+    _departmentController.text = user.department;
+    _positionController.text = user.position;
   }
 
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    
     if (image != null) {
       context.read<ProfileBloc>().add(UpdateProfileImage(imagePath: image.path));
     }
@@ -69,18 +81,22 @@ class _ProfilePageState extends State<ProfilePage> {
                 return IconButton(
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
-                      final updatedEmployee = state.employee.copyWith(
-                        firstName: _firstNameController.text.trim(),
-                        lastName: _lastNameController.text.trim(),
+                      final updatedUser = User(
+                        id: state.user.id,
+                        fullName: '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}',
                         email: _emailController.text.trim(),
                         phone: _phoneController.text.trim(),
                         department: _departmentController.text.trim(),
                         position: _positionController.text.trim(),
+                        profileImage: state.user.profileImage,
+                        tenantId: state.user.tenantId,
+                        companyName: state.user.companyName,
+                        isActive: state.user.isActive,
+                        roleId: state.user.roleId,
+                        createdAt: state.user.createdAt,
+                        updatedAt: state.user.updatedAt,
                       );
-                      
-                      context.read<ProfileBloc>().add(
-                        UpdateProfile(employee: updatedEmployee),
-                      );
+                      //context.read<ProfileBloc>().add(UpdateProfile(user: updatedUser));
                     }
                   },
                   icon: const Icon(Icons.save),
@@ -94,7 +110,7 @@ class _ProfilePageState extends State<ProfilePage> {
       body: BlocConsumer<ProfileBloc, ProfileState>(
         listener: (context, state) {
           if (state is ProfileLoaded) {
-            _populateFields(state.employee);
+            _populateFields(state.user);
           } else if (state is ProfileUpdated) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -115,7 +131,7 @@ class _ProfilePageState extends State<ProfilePage> {
           if (state is ProfileLoading) {
             return const Center(child: CircularProgressIndicator());
           }
-          
+
           if (state is ProfileLoaded) {
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
@@ -123,29 +139,56 @@ class _ProfilePageState extends State<ProfilePage> {
                 key: _formKey,
                 child: Column(
                   children: [
-                    // Profile Image Section
                     Center(
                       child: Stack(
                         children: [
-                          CircleAvatar(
-                            radius: 60,
-                            backgroundImage: NetworkImage(state.employee.profileImage),
-                            backgroundColor: Colors.grey[300],
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppTheme.primaryColor,
+                                width: 3.0,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  spreadRadius: 2,
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: CircleAvatar(
+                              radius: 60,
+                              backgroundImage: state.user.profileImage.isNotEmpty
+                                  ? NetworkImage(state.user.profileImage)
+                                  : const AssetImage('assets/images/profile.avif') as ImageProvider,
+                              backgroundColor: Colors.grey[300],
+                            ),
                           ),
                           Positioned(
                             bottom: 0,
                             right: 0,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: AppTheme.primaryColor,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: IconButton(
-                                onPressed: _pickImage,
-                                icon: const Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 20,
+                            child: GestureDetector(
+                              onTap: _pickImage,
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryColor,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2.0,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.2),
+                                      spreadRadius: 1,
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -155,7 +198,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Employee Info Card
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -169,31 +211,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                             ),
                             const SizedBox(height: 16),
-                            
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildInfoItem(
-                                    'Employee ID',
-                                    state.employee.employeeId.toString(),
-                                    Icons.badge,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: _buildInfoItem(
-                                    'Join Date',
-                                    DateFormat('MMM dd, yyyy').format(state.employee.joinDate),
-                                    Icons.calendar_today,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            
                             _buildInfoItem(
                               'Salary',
-                              '\$${NumberFormat('#,##0').format(state.employee.salary)}',
+                              '\$10000',
                               Icons.attach_money,
                             ),
                           ],
@@ -202,7 +222,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Personal Information Form
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16.0),
@@ -327,7 +346,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             );
           }
-          
+
           return const Center(
             child: Text('Unable to load profile'),
           );

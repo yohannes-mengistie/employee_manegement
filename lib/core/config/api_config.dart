@@ -52,6 +52,7 @@ class ApiConfig {
   static const String attendanceStatsEndpoint = '/attendance/employee/{employeeId}/stats';
   static const String attendanceDepartmentEndpoint = '/attendance/department';
   static const String attendanceSummaryEndpoint = '/attendance/summary';
+  static const String attendanceEmployeeEndPoint = '/attendance/employee/{employeeId}';
   
   // Request timeouts
   static const Duration connectTimeout = Duration(seconds: 30);

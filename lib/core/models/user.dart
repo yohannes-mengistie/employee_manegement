@@ -18,6 +18,10 @@ class User extends Equatable {
   final DateTime updatedAt;
   final Role? role;
   final Tenant? tenant;
+  final String profileImage;
+  final String phone ;
+  final String department ;
+  final String position ;
 
   const User({
     required this.id,
@@ -36,6 +40,10 @@ class User extends Equatable {
     required this.updatedAt,
     this.role,
     this.tenant,
+    this.profileImage = 'assets/images/profile.avif',
+    this.phone = '+251911212121',
+    this.department = 'General',
+    this.position = 'Employee',
   });
 
   // Extract first and last name from fullName - IMPROVED
@@ -145,7 +153,7 @@ class User extends Equatable {
       phone: '+1234567890', // Default phone since not in User model
       department: role?.name ?? 'General',
       position: role?.name ?? 'Employee',
-      profileImage: 'https://via.placeholder.com/150', // Default image
+      profileImage: 'assets/images/profile.avif', // Default image
       joinDate: createdAt,
       salary: 50000.0, // Default salary since not in User model
       employeeId: id,

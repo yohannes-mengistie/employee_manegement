@@ -1,4 +1,3 @@
-
 import 'package:dio/dio.dart';
 import 'package:employee_manegement/core/config/api_config.dart';
 import 'package:employee_manegement/core/models/auth_dto.dart';
@@ -19,9 +18,9 @@ class AuthRepository {
   Future<AuthResponse> login(String email, String password) async {
     try {
       final loginDto = LoginDto(email: email, password: password);
-      
+
       print('🔐 Attempting login with email: $email');
-      
+
       final response = await _apiService.post(
         ApiConfig.loginEndpoint,
         data: loginDto.toJson(),
@@ -37,18 +36,25 @@ class AuthRepository {
       if (response.data is Map<String, dynamic>) {
         responseData = response.data as Map<String, dynamic>;
       } else {
-        throw Exception('Invalid response format: ${response.data.runtimeType}');
+        throw Exception(
+          'Invalid response format: ${response.data.runtimeType}',
+        );
       }
 
       if (!responseData.containsKey('access_token')) {
-        print('⚠️ Response missing access_token field. Available fields: ${responseData.keys}');
+        print(
+          '⚠️ Response missing access_token field. Available fields: ${responseData.keys}',
+        );
         throw Exception('Login response missing access_token');
       }
 
       // Create AuthResponse by decoding JWT and fetching user profile
-      final authResponse = await _createAuthResponseWithUserProfile(responseData, email);
+      final authResponse = await _createAuthResponseWithUserProfile(
+        responseData,
+        email,
+      );
       await _tokenService.saveAuthResponse(authResponse);
-      
+
       return authResponse;
     } catch (e) {
       print('❌ Login failed: $e');
@@ -57,10 +63,13 @@ class AuthRepository {
   }
 
   // Helper method to create AuthResponse by fetching user profile - UPDATED for User model
-  Future<AuthResponse> _createAuthResponseWithUserProfile(Map<String, dynamic> data, String email) async {
+  Future<AuthResponse> _createAuthResponseWithUserProfile(
+    Map<String, dynamic> data,
+    String email,
+  ) async {
     try {
       final accessToken = data['access_token'] as String;
-      
+
       if (accessToken.isEmpty) {
         throw Exception('Empty access_token received');
       }
@@ -68,7 +77,7 @@ class AuthRepository {
       // Decode JWT to get user information with detailed logging
       print('🔍 Analyzing JWT token...');
       final userInfo = JwtService.getUserInfo(accessToken);
-      
+
       print('📋 Complete JWT user info:');
       userInfo.forEach((key, value) {
         print('  $key: $value');
@@ -95,15 +104,19 @@ class AuthRepository {
       if (userId == null) {
         print('⚠️ Could not extract user ID from JWT token, using fallback');
         // Create employee from JWT data with fallback ID
-        final employee = _createEmployeeFromJWT(1, tokenEmail ?? email, tenantId);
+        final employee = _createEmployeeFromJWT(
+          1,
+          tokenEmail ?? email,
+          tenantId,
+        );
         return AuthResponse(
           token: accessToken,
           refreshToken: accessToken,
           employee: employee,
-          expiresAt: expirationDate ?? DateTime.now().add(const Duration(hours: 24)),
+          expiresAt:
+              expirationDate ?? DateTime.now().add(const Duration(hours: 24)),
         );
       }
-
 
       // Fetch user profile using the extracted user ID
       Employee employee;
@@ -113,14 +126,19 @@ class AuthRepository {
       } catch (e) {
         print('⚠️ Failed to fetch user profile from backend: $e');
         print('🔄 Creating fallback employee from JWT data');
-        employee = _createEmployeeFromJWT(userId, tokenEmail ?? email, tenantId);
+        employee = _createEmployeeFromJWT(
+          userId,
+          tokenEmail ?? email,
+          tenantId,
+        );
       }
 
       return AuthResponse(
         token: accessToken,
         refreshToken: accessToken, // Use same token as refresh token
         employee: employee,
-        expiresAt: expirationDate ?? DateTime.now().add(const Duration(hours: 24)),
+        expiresAt:
+            expirationDate ?? DateTime.now().add(const Duration(hours: 24)),
       );
     } catch (e) {
       print('❌ Error creating AuthResponse with user profile: $e');
@@ -133,19 +151,21 @@ class AuthRepository {
   Future<Employee> _fetchUserProfileById(String token, int userId) async {
     try {
       print('🌐 Fetching user profile for ID: $userId');
-      
+
       // Create a temporary Dio instance with the token
-      final dio = Dio(BaseOptions(
-        baseUrl: ApiConfig.baseUrl,
-        headers: {
-          ...ApiConfig.defaultHeaders,
-          'Authorization': 'Bearer $token',
-        },
-      ));
+      final dio = Dio(
+        BaseOptions(
+          baseUrl: ApiConfig.baseUrl,
+          headers: {
+            ...ApiConfig.defaultHeaders,
+            'Authorization': 'Bearer $token',
+          },
+        ),
+      );
 
       Response? response;
       User? user;
-      
+
       // Method 1: Try /user/{id} endpoint FIRST
       try {
         print('🔍 Trying /user/$userId endpoint (primary method)...');
@@ -154,7 +174,7 @@ class AuthRepository {
         print('📦 Raw response data: ${response.data}');
         print('📦 Response type: ${response.data.runtimeType}');
         print('📦 Status Code: ${response.statusCode}');
-        
+
         final userData = _parseResponseData(response.data, '/user/$userId');
         if (userData != null && userData.isNotEmpty) {
           user = User.fromJson(userData);
@@ -172,43 +192,46 @@ class AuthRepository {
         }
       }
 
-      // Method 2: Try /user/me endpoint as fallback
-      if (user == null) {
-        try {
-          print('🔍 Trying /user/me endpoint (fallback)...');
-          response = await dio.get(ApiConfig.userMeEndpoint);
-          print('✅ Got response from /user/me');
-          print('📦 Raw response data: ${response.data}');
-          print('📦 Response type: ${response.data.runtimeType}');
-          
-          final userData = _parseResponseData(response.data, '/user/me');
-          if (userData != null && userData.isNotEmpty) {
-            user = User.fromJson(userData);
-            print('✅ Successfully parsed User data from /user/me');
-            print('👤 User: ${user.fullName} (ID: ${user.id})');
-          } else {
-            print('⚠️ /user/me returned empty or invalid data');
-          }
-        } catch (e) {
-          print('❌ /user/me failed: $e');
-          if (e is DioException) {
-            print('  Status Code: ${e.response?.statusCode}');
-            print('  Response Data: "${e.response?.data}"');
-            print('  Response Type: ${e.response?.data.runtimeType}');
-          }
-        }
-      }
+      // // Method 2: Try /user/me endpoint as fallback
+      // if (user == null) {
+      //   try {
+      //     print('🔍 Trying /user/me endpoint (fallback)...');
+      //     response = await dio.get(ApiConfig.userMeEndpoint);
+      //     print('✅ Got response from /user/me');
+      //     print('📦 Raw response data: ${response.data}');
+      //     print('📦 Response type: ${response.data.runtimeType}');
 
+      //     final userData = _parseResponseData(response.data, '/user/me');
+      //     if (userData != null && userData.isNotEmpty) {
+      //       user = User.fromJson(userData);
+      //       print('✅ Successfully parsed User data from /user/me');
+      //       print('👤 User: ${user.fullName} (ID: ${user.id})');
+      //     } else {
+      //       print('⚠️ /user/me returned empty or invalid data');
+      //     }
+      //   } catch (e) {
+      //     print('❌ /user/me failed: $e');
+      //     if (e is DioException) {
+      //       print('  Status Code: ${e.response?.statusCode}');
+      //       print('  Response Data: "${e.response?.data}"');
+      //       print('  Response Type: ${e.response?.data.runtimeType}');
+      //     }
+      //   }
+      // }
 
       if (user != null) {
         // Convert User to Employee
         final employee = user.toEmployee();
-        print('✅ Successfully converted User to Employee: ${employee.fullName}');
+        print(
+          '✅ Successfully converted User to Employee: ${employee.fullName}',
+        );
         print('📦 Employee data: ${employee.toJson()}');
         return employee;
       } else {
         print('❌ All endpoints returned empty or invalid data');
-        throw Exception('All profile fetch attempts failed - no valid data received from any endpoint');
+        throw Exception(
+          'All profile fetch attempts failed - no valid data received from any endpoint',
+        );
       }
     } catch (e) {
       print('❌ Failed to fetch user profile by ID: $e');
@@ -217,7 +240,10 @@ class AuthRepository {
   }
 
   // Helper method to parse response data safely - SAME AS BEFORE
-  Map<String, dynamic>? _parseResponseData(dynamic responseData, String endpoint) {
+  Map<String, dynamic>? _parseResponseData(
+    dynamic responseData,
+    String endpoint,
+  ) {
     try {
       print('🔧 Parsing response data from $endpoint...');
       print('📦 Data type: ${responseData.runtimeType}');
@@ -255,7 +281,7 @@ class AuthRepository {
         print('🔄 Response is a string, attempting JSON parse...');
         print('📝 String content: "$responseData"');
         print('📏 String length: ${responseData.length}');
-        
+
         if (responseData.trim().isEmpty) {
           print('❌ String is empty or whitespace only');
           return null;
@@ -264,7 +290,7 @@ class AuthRepository {
         try {
           final parsed = jsonDecode(responseData);
           print('✅ Successfully parsed JSON from string');
-          
+
           if (parsed is Map<String, dynamic>) {
             if (parsed.isEmpty) {
               print('⚠️ Parsed map is empty');
@@ -312,21 +338,20 @@ class AuthRepository {
     }
   }
 
-
   // Create employee from JWT data when backend fetch fails - ENHANCED
   Employee _createEmployeeFromJWT(int userId, String email, int? tenantId) {
     print('🔧 Creating fallback employee from JWT data');
     print('📋 Input data: userId=$userId, email=$email, tenantId=$tenantId');
-    
+
     // Extract name from email
     String firstName = 'User';
     String lastName = 'Employee';
-    
+
     try {
       if (email.contains('@')) {
         final emailPart = email.split('@')[0];
         print('📧 Email part: $emailPart');
-        
+
         if (emailPart.contains('.')) {
           final nameParts = emailPart.split('.');
           firstName = _capitalize(nameParts[0]);
@@ -372,7 +397,7 @@ class AuthRepository {
 
   String _capitalize(String text) {
     if (text.isEmpty) return text;
-    return text[0].toUpperCase() + text.substring(1).toLowerCase();
+    return text[0].toLowerCase() + text.substring(1).toLowerCase();
   }
 
   // Register - Updated for access_token response
@@ -388,11 +413,11 @@ class AuthRepository {
       }
 
       final authResponse = await _createAuthResponseWithUserProfile(
-        response.data, 
-        registerDto.email
+        response.data,
+        registerDto.email,
       );
       await _tokenService.saveAuthResponse(authResponse);
-      
+
       return authResponse;
     } catch (e) {
       print('❌ Registration failed: $e');
@@ -409,7 +434,9 @@ class AuthRepository {
         return null;
       }
 
-      print('📋 Current auth response: ${authResponse.employee.fullName} (ID: ${authResponse.employee.employeeId})');
+      print(
+        '📋 Current auth response: ${authResponse.employee.fullName} (ID: ${authResponse.employee.employeeId})',
+      );
 
       // Try to refresh user profile from backend
       final token = authResponse.token;
@@ -417,7 +444,7 @@ class AuthRepository {
 
       try {
         final updatedEmployee = await _fetchUserProfileById(token, userId);
-        
+
         // Update stored auth response with fresh profile data
         final updatedAuthResponse = AuthResponse(
           token: authResponse.token,
@@ -426,7 +453,7 @@ class AuthRepository {
           expiresAt: authResponse.expiresAt,
         );
         await _tokenService.saveAuthResponse(updatedAuthResponse);
-        
+
         print('✅ Successfully refreshed user profile from backend');
         return updatedEmployee;
       } catch (e) {
@@ -440,12 +467,11 @@ class AuthRepository {
     }
   }
 
-
   // Forgot Password
   Future<Map<String, dynamic>> forgotPassword(String email) async {
     try {
       final forgotPasswordDto = ForgotPasswordDto(email: email);
-      
+
       final response = await _apiService.post(
         ApiConfig.forgotPasswordEndpoint,
         data: forgotPasswordDto.toJson(),
@@ -454,15 +480,24 @@ class AuthRepository {
       return response.data ?? {'message': 'Password reset email sent'};
     } catch (e) {
       print('❌ Forgot password failed: $e');
-      return {'message': 'If an account with that email exists, a password reset link has been sent.'};
+      return {
+        'message':
+            'If an account with that email exists, a password reset link has been sent.',
+      };
     }
   }
 
   // Reset Password
-  Future<Map<String, dynamic>> resetPassword(String token, String password) async {
+  Future<Map<String, dynamic>> resetPassword(
+    String token,
+    String password,
+  ) async {
     try {
-      final resetPasswordDto = ResetPasswordDto(token: token, password: password);
-      
+      final resetPasswordDto = ResetPasswordDto(
+        token: token,
+        password: password,
+      );
+
       final response = await _apiService.post(
         ApiConfig.resetPasswordEndpoint,
         data: resetPasswordDto.toJson(),

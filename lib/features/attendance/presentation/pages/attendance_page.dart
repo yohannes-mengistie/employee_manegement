@@ -103,18 +103,15 @@ class AttendanceFormTab extends StatelessWidget {
                 'Add Attendance Record',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryColor,
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 decoration: InputDecoration(
                   labelText: 'Date',
-                  filled: true,
-                  fillColor: Colors.grey[100],
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
                   ),
                 ),
                 initialValue: DateFormat('yyyy-MM-dd').format(currentDate),
@@ -128,15 +125,12 @@ class AttendanceFormTab extends StatelessWidget {
                       controller: checkInController,
                       decoration: InputDecoration(
                         labelText: 'Check In Time',
-                        filled: true,
-                        fillColor: Colors.grey[100],
+                        suffixIcon: Icon(
+                          Icons.access_time,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
-                        suffixIcon: const Icon(
-                          Icons.access_time,
-                          color: AppTheme.primaryColor,
                         ),
                       ),
                       readOnly: true,
@@ -149,22 +143,18 @@ class AttendanceFormTab extends StatelessWidget {
                             return Theme(
                               data: Theme.of(context).copyWith(
                                 timePickerTheme: TimePickerThemeData(
-                                  backgroundColor: Colors.white,
-                                  hourMinuteTextColor: AppTheme.primaryColor,
-                                  dialHandColor: AppTheme.primaryColor,
-                                  entryModeIconColor: AppTheme.primaryColor,
+                                  backgroundColor: Theme.of(context).colorScheme.surface,
+                                  hourMinuteTextColor: Theme.of(context).colorScheme.primary,
+                                  dialHandColor: Theme.of(context).colorScheme.primary,
+                                  entryModeIconColor: Theme.of(context).colorScheme.primary,
                                 ),
-                                colorScheme: ColorScheme.light(
-                                  primary: AppTheme.primaryColor,
-                                  onPrimary: Colors.white,
-                                  surface: Colors.grey[100] ?? Colors.white,
-                                  onSurface: Colors.black,
+                                colorScheme: Theme.of(context).colorScheme.copyWith(
+                                  surface: Theme.of(context).colorScheme.surface,
+                                  onSurface: Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                               child: MediaQuery(
-                                data: MediaQuery.of(
-                                  context,
-                                ).copyWith(alwaysUse24HourFormat: true),
+                                data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
                                 child: child!,
                               ),
                             );
@@ -183,15 +173,12 @@ class AttendanceFormTab extends StatelessWidget {
                       controller: checkOutController,
                       decoration: InputDecoration(
                         labelText: 'Check Out Time',
-                        filled: true,
-                        fillColor: Colors.grey[100],
+                        suffixIcon: Icon(
+                          Icons.access_time,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
-                        ),
-                        suffixIcon: const Icon(
-                          Icons.access_time,
-                          color: AppTheme.primaryColor,
                         ),
                       ),
                       readOnly: true,
@@ -204,22 +191,18 @@ class AttendanceFormTab extends StatelessWidget {
                             return Theme(
                               data: Theme.of(context).copyWith(
                                 timePickerTheme: TimePickerThemeData(
-                                  backgroundColor: Colors.white,
-                                  hourMinuteTextColor: AppTheme.primaryColor,
-                                  dialHandColor: AppTheme.primaryColor,
-                                  entryModeIconColor: AppTheme.primaryColor,
+                                  backgroundColor: Theme.of(context).colorScheme.surface,
+                                  hourMinuteTextColor: Theme.of(context).colorScheme.primary,
+                                  dialHandColor: Theme.of(context).colorScheme.primary,
+                                  entryModeIconColor: Theme.of(context).colorScheme.primary,
                                 ),
-                                colorScheme: ColorScheme.light(
-                                  primary: AppTheme.primaryColor,
-                                  onPrimary: Colors.white,
-                                  surface: Colors.grey[100] ?? Colors.white,
-                                  onSurface: Colors.black,
+                                colorScheme: Theme.of(context).colorScheme.copyWith(
+                                  surface: Theme.of(context).colorScheme.surface,
+                                  onSurface: Theme.of(context).colorScheme.onSurface,
                                 ),
                               ),
                               child: MediaQuery(
-                                data: MediaQuery.of(
-                                  context,
-                                ).copyWith(alwaysUse24HourFormat: true),
+                                data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
                                 child: child!,
                               ),
                             );
@@ -238,26 +221,22 @@ class AttendanceFormTab extends StatelessWidget {
               DropdownButtonFormField<String>(
                 decoration: InputDecoration(
                   labelText: 'Status',
-                  filled: true,
-                  fillColor: Colors.grey[100],
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
                   ),
                 ),
-                items:
-                    [
-                      'present',
-                      'absent',
-                      'late',
-                      'half_day',
-                      'work_from_home',
-                    ].map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value.replaceAll('_', ' ').toUpperCase()),
-                      );
-                    }).toList(),
+                items: [
+                  'present',
+                  'absent',
+                  'late',
+                  'half_day',
+                  'work_from_home',
+                ].map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value.replaceAll('_', ' ').toUpperCase()),
+                  );
+                }).toList(),
                 value: statusController.text,
                 onChanged: (value) {
                   if (value != null) {
@@ -270,11 +249,8 @@ class AttendanceFormTab extends StatelessWidget {
                 controller: notesController,
                 decoration: InputDecoration(
                   labelText: 'Notes (Optional)',
-                  filled: true,
-                  fillColor: Colors.grey[100],
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
                   ),
                 ),
                 maxLines: 3,
@@ -291,7 +267,7 @@ class AttendanceFormTab extends StatelessWidget {
                       statusController.text = 'present';
                     },
                     style: TextButton.styleFrom(
-                      foregroundColor: Colors.grey[600],
+                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 12,
@@ -366,8 +342,8 @@ class AttendanceFormTab extends StatelessWidget {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
-                      foregroundColor: Colors.white,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 12,
